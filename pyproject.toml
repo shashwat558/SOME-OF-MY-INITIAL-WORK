@@ -1,0 +1,12 @@
+[project]
+name = "some-of-my-initial-work"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.121.2",
+    "inngest>=0.5.12",
+    "llama-index-core>=0.14.8",
+    "llama-index-readers-file>=0.5.4",
+]
