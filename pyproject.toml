@@ -9,4 +9,9 @@ dependencies = [
     "inngest>=0.5.12",
     "llama-index-core>=0.14.8",
     "llama-index-readers-file>=0.5.4",
+    "openai>=2.8.0",
+    "python-dotenv>=1.2.1",
+    "qdrant-client>=1.15.1",
+    "streamlit>=1.51.0",
+    "uvicorn>=0.38.0",
 ]
