@@ -48,6 +48,50 @@ async def rag_inngest_pdf(ctx:inngest.Context):
     
     return ingested.model_dump()
 
+@inngest_client.create_function(
+    fn_id="RAG: Query",
+    trigger=inngest.TriggerEvent(event="rag/query_pdf_ai")
+)
+
+async def rag_query_pdf_ai(ctx: inngest.Context) -> RAGSearchResult:
+    def _search(question: str, top_k: int=5):
+        query_vec = embed_texts([question])[0]
+        store = QdrantStorage()
+        found = store.search(query_vec, top_k)
+        return RAGSearchResult(contexts=found["contexts"], sources=found["sources"])
+        
+    question = ctx.event.data["question"]
+    top_k = int(ctx.event.data.get["top_k", 5])
+    
+    found = await ctx.step.run("embed_and_search", lambda: _search(question, top_k), output_type=RAGSearchResult);
+    
+    context_block = "\n\n".join(f"- {c}" for c in found.contexts)
+    user_content = (
+        "use the following context to answer the question.\n\n"
+        f"Context: \n{context_block}\n\n"
+        f"Question: {question}\n"
+        "Answer concisely using Context above"
+    )
+    
+    adapter = ai.openai.Adapter(
+        auth_key=os.getenv("OPENAI_API_KEY"),
+        model="gpt-4o-mini"
+    )
+    
+    res = await ctx.step.ai.infer(
+        "llm-answer",
+        adapter=adapter,
+        body={
+            "max_token": 1024,
+            "temperature": 0.2,
+            "messages": [
+                    {'role': "system", "content": "You answer questions using only provided context."},
+                    {"role": "user", "content": user_content}
+            ]
+        }
+    )
+    
+
 app = FastAPI()
 
 inngest.fast_api.serve(app, inngest_client, [rag_inngest_pdf])
